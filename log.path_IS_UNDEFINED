@@ -1,0 +1,7 @@
+{ "correlationId" : "1572489471742", "message" : "Mensagem logada" }
+{ "correlationId" : "1572489471742", "message" : "Mensagem logada" }
+{ "severity" : "INFO",  "correlationId" : "1572489726325", "message" : "Mensagem logada" }
+{ "severity" : "DEBUG", "correlationId" : "1572489726325", "message" : "DEBUG" }
+{ "severity" : "INFO",  "correlationId" : "1572490075194", "message" : "Mensagem logada" }
+{ "severity" : "DEBUG", "correlationId" : "1572490075194", "message" : "DEBUG" }
+{ "severity" : "DEBUG", "correlationId" : "1572490075194", "message" : "TRACE" }
