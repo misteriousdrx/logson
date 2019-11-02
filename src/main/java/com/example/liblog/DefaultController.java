@@ -13,11 +13,22 @@ public class DefaultController {
     public ResponseEntity<?> get() {
 
         Logson.setCorrelationId(String.valueOf(new Date().getTime()));
-//        Logson.info("Mensagem logada");
-//        Logson.debug("DEBUG");
-//        Logson.trace("TRACE");
-        Logson.warning("WARN");
-//        Logson.error("ERROR");
+
+        Logson.error("Mensagem erro");
+        Logson.warning("Mensagem warning");
+        Logson.info("Mensagem info");
+        Logson.debug("Mensagem debug");
+        Logson.trace("Mensagem trace");
+
+
+        try {
+
+            float a = 10 / 0;
+
+        } catch (ArithmeticException e) {
+            Logson.error("Divisão por zero", e);
+
+        }
 
         return ResponseEntity.ok("it works!");
 

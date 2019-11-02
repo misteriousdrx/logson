@@ -1,7 +1,15 @@
 <configuration>
 
-    <property name="LOGS" value="./logs" />
-    <springProperty scope="context" name="log.path" source="log.path" />
+    <springProperty scope="context" defaultValue="C:\\Users\\Paulo\\Desktop\\app.txt" name="liblog.general.file-name" source="liblog.general.file-name" />
+    <springProperty scope="context" defaultValue="2MB" name="liblog.general.file-max-size" source="liblog.general.file-max-size" />
+    <springProperty scope="context" defaultValue="6MB" name="liblog.general.file-max-total-size" source="liblog.general.file-max-total-size" />
+    <springProperty scope="context" defaultValue="1" name="liblog.general.file-history-size" source="liblog.general.file-max-period" />
+
+    <springProperty scope="context" defaultValue="C:\\Users\\Paulo\\Desktop\\aplicacao.txt" name="liblog.business.file-name" source="liblog.business.file-name" />
+    <springProperty scope="context" defaultValue="2MB" name="liblog.business.file-max-size" source="liblog.business.file-max-size" />
+    <springProperty scope="context" defaultValue="6MB" name="liblog.business.file-max-total-size" source="liblog.business.file-max-total-size" />
+    <springProperty scope="context" defaultValue="1" name="liblog.business.file-history-size" source="liblog.business.file-max-period" />
+
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -9,36 +17,63 @@
         </encoder>
     </appender>
 
-    <appender name="SPLUNK" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%msg%n</pattern>
+
+    <appender name="STDOUT-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${liblog.general.file-name}</file>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{yyyy/MM/dd HH:mm:ss.SSS} [%thread] [%-5level] %logger{36} - %msg%n</Pattern>
         </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${liblog.general.file-name}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+
+            <!-- tamanho máximo por arquivo para rotação -->
+            <maxFileSize>${liblog.general.file-max-size}</maxFileSize>
+
+            <!-- tamanho máximo de todos os arquivos para reciclagem -->
+            <totalSizeCap>${liblog.general.file-max-total-size}</totalSizeCap>
+
+            <!-- retenção máxima dos arquivos em dias -->
+            <maxHistory>${liblog.general.file-history-size}</maxHistory>
+
+        </rollingPolicy>
+
     </appender>
 
-    <appender name="SPLUNK-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}</file>
+
+    <appender name="SPLUNK" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${liblog.business.file-name}</file>
 
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>%msg%n</Pattern>
         </encoder>
 
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${liblog.business.file-name}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+
+            <!-- tamanho máximo por arquivo para rotação -->
+            <maxFileSize>${liblog.business.file-max-size}</maxFileSize>
+
+            <!-- tamanho máximo de todos os arquivos para reciclagem -->
+            <totalSizeCap>${liblog.business.file-max-total-size}</totalSizeCap>
+
+            <!-- retenção máxima dos arquivos em dias -->
+            <maxHistory>${liblog.business.file-history-size}</maxHistory>
+
         </rollingPolicy>
     </appender>
 
 
-
     <logger name="com.example.liblog.Logson">
         <appender-ref ref="SPLUNK" />
-        <appender-ref ref="SPLUNK-FILE" />
     </logger>
+
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT-FILE" />
     </root>
+
 
 </configuration>

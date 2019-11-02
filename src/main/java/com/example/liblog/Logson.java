@@ -5,10 +5,13 @@ import com.example.liblog.enums.Severity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +19,11 @@ import java.util.Optional;
 public class Logson {
 
 
+    private static Logger logger = LoggerFactory.getLogger(Logson.class);
+
     private static ResponseDto responseDto = new ResponseDto();
+    private static String serviceId;
+    private static String domain;
 
 
 
@@ -32,85 +39,127 @@ public class Logson {
 
     }
 
-
-    public static void warning(String message) {
-
-        Logger logger = LoggerFactory.getLogger(Logson.class);
-
-        responseDto.setReturnCode("00");
-        responseDto.setReturnMessage("It works!");
-
-        String data = getBasicInfoAsMap(Severity.WARN, message, Optional.ofNullable(responseDto), Optional.empty());
-
-        logger.warn(data);
-
-//        logger.warn("{ \"severity\" : \"WARN\",  \"correlationId\" : \"{}\", \"message\" : \"{}\" }", getCorrelationId(), message);
-
+    public static void setServiceId(String serviceId) {
+        Logson.serviceId = serviceId;
     }
+
+    public static void setDomain(String domain) {
+        Logson.domain = domain;
+    }
+
+
 
     public static void error(String message) {
 
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        responseDto.setReturnCode("02");
+        responseDto.setReturnMessage("This is an error!");
 
-        Logger logger = LoggerFactory.getLogger(Logson.class);
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.ERROR, correlation, message, Optional.ofNullable(responseDto), Optional.empty())).start();
 
-        logger.error("{ \"severity\" : \"INFO\",  \"correlationId\" : \"{}\", \"message\" : \"{}\" }", getCorrelationId(), message);
+
+    }
+
+    public static void error(String message, Throwable e) {
+
+        responseDto.setReturnCode("02");
+        responseDto.setReturnMessage("This is an error!");
+
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.ERROR, correlation, message, Optional.ofNullable(responseDto), Optional.ofNullable(e))).start();
+
+    }
+
+    public static void warning(String message) {
+
+        responseDto.setReturnCode("01");
+        responseDto.setReturnMessage("This is a warning!");
+
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.WARN, correlation, message, Optional.ofNullable(responseDto), Optional.empty())).start();
 
     }
 
     public static void info(String message) {
 
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        responseDto.setReturnCode("00");
+        responseDto.setReturnMessage("This is an info!");
 
-        Logger logger = LoggerFactory.getLogger(Logson.class);
-
-        logger.info("{ \"severity\" : \"INFO\",  \"correlationId\" : \"{}\", \"message\" : \"{}\" }", getCorrelationId(), message);
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.INFO, correlation, message, Optional.ofNullable(responseDto), Optional.empty())).start();
 
     }
 
     public static void debug(String message) {
 
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        responseDto.setReturnCode("03");
+        responseDto.setReturnMessage("This is a debug!");
 
-        Logger logger = LoggerFactory.getLogger(Logson.class);
-
-        logger.debug("{ \"severity\" : \"DEBUG\", \"correlationId\" : \"{}\", \"message\" : \"{}\" }", getCorrelationId(), message);
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.DEBUG, correlation, message, Optional.ofNullable(responseDto), Optional.empty())).start();
 
     }
 
     public static void trace(String message) {
 
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        responseDto.setReturnCode("99");
+        responseDto.setReturnMessage("This is a trace!");
 
-        Logger logger = LoggerFactory.getLogger(Logson.class);
-
-        logger.trace("{ \"severity\" : \"DEBUG\", \"correlationId\" : \"{}\", \"message\" : \"{}\" }", getCorrelationId(), message);
+        String correlation = getCorrelationId();
+        new Thread(() -> doLog(Severity.TRACE, correlation, message, Optional.ofNullable(responseDto), Optional.empty())).start();
 
     }
 
-    private static String getBasicInfoAsMap(Severity severity, String message, Optional<Object> payload, Optional<Throwable> exception){
+
+
+    private static void doLog(Severity severity, String correlationId, String message, Optional<Object> payload, Optional<Throwable> exception){
 
         try {
 
             Map<String, Object> data = new HashMap<>();
             ObjectMapper mapper = new ObjectMapper();
-            Gson gson = new Gson();
 
             StackTraceElement stackTraceElement = Thread.currentThread().getStackTrace()[3];
 
             data.put("severity", severity.getValue());
-            data.put("correlationId", getCorrelationId());
+            data.put("correlationId", correlationId);
+            data.put("fqdn", InetAddress.getLocalHost().getHostName());
+            data.put("service", serviceId);
+            data.put("domain", domain);
             data.put("codePoint", stackTraceElement.getClassName().concat(" : ").concat(String.valueOf(stackTraceElement.getLineNumber())));
             data.put("message", message);
 
             payload.ifPresent(p -> data.put("payload", p));
-            exception.ifPresent(e -> data.put("thrownException", e));
+            exception.ifPresent(e -> data.put("thrownException", ExceptionUtils.getStackTrace(e)));
 
-            return mapper.writeValueAsString(data);
-//            return gson.toJson(data);
+            String log = mapper.writeValueAsString(data);
 
-        } catch (JsonProcessingException e) {
-            return "Erro ao serializar objeto. ".concat(e.toString());
+            switch (severity){
+
+                case ERROR:
+                    logger.error(log);
+                    break;
+
+                case WARN:
+                    logger.warn(log);
+                    break;
+
+                case INFO:
+                    logger.info(log);
+                    break;
+
+                case DEBUG:
+                    logger.debug(log);
+                    break;
+
+                case TRACE:
+                    logger.trace(log);
+                    break;
+
+            }
+
+        } catch (JsonProcessingException | UnknownHostException e) {
+
 
         }
 

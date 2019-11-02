@@ -8,6 +8,10 @@ public class LibLogApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(LibLogApplication.class, args);
+
+		Logson.setDomain("domínio teste");
+		Logson.setServiceId("serviço_01");
+
 	}
 
 }
